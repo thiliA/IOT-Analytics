@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<templateDomain name="IOT_Sensor_Data_Analysis">
+    <description>IOT Analysis Description</description>
+    <templates>
+        <template name="Temperature_Analysis">
+            <description>To analyse temperature data</description>
+            <executionType>realtime</executionType>
+            <script>
+
+            <![CDATA[
+                /* Enter a unique ExecutionPlan */
+                @Plan:name('TemperatureAnalysisPlan')
+
+                /* Enter a unique description for ExecutionPlan */
+                -- @Plan:description('ExecutionPlan')
+
+                /* define streams/tables and write queries here ... */
+
+                @Import('org.wso2.event.sensor.stream:1.0.0')
+                define stream InputStream (sensor_id string, sensor_value double);
+
+		@Export('org.wso2.event.current.statistics.stream:1.0.0')
+		define stream OutputStream (sensor_type string, sensor_id_distinct_count long, count long, sum double, average double, max double, min double);
+
+		from InputStream#window.time($timeInMins min)
+		select '$sensorValue' as sensor_type, distinctcount(sensor_id) as sensor_id_distinct_count, count() as count, sum(sensor_value) as sum, avg(sensor_value) as average, max(sensor_value) as 			max, min(sensor_value) as min
+		insert into OutputStream;
+                 ]]>
+            </script>
+            <parameters>
+                <parameter name="timeInMins" type="int">
+                    <displayName>The time period to hold events in minutes</displayName>
+                    <description> The sliding time period for which the window should hold events</description>
+                    <defaultValue>1</defaultValue>
+                </parameter>
+                <parameter name="sensorValue" type="string">
+                    <displayName>Sensor Type Name</displayName>
+                    <description>The name of the sensor type</description>
+                    <defaultValue>Temperature</defaultValue>
+                </parameter>
+            </parameters>
+        </template>
+        <template name="Grouped_Temperature_Analysis">
+            <description>To analyse temperature data by grouping</description>
+            <executionType>realtime</executionType>
+            <script>
+
+            <![CDATA[
+                /* Enter a unique ExecutionPlan */
+		@Plan:name('GroupedTemperatureAnalysisPlan')
+
+		/* Enter a unique description for ExecutionPlan */
+		-- @Plan:description('ExecutionPlan')
+
+		/* define streams/tables and write queries here ... */
+
+		@Import('org.wso2.event.raw.sensor.stream:1.0.0')
+		define stream InputStream (sensor_id string, sensor_value double);
+
+		@Export('org.wso2.event.grouped.sensor.stream:1.0.0')
+		define stream OutputStream (sensor_id string, count long, sum double, average double, max double, min double);
+
+		from InputStream#window.time($timeInMins min)
+		select sensor_id, count() as count, sum(sensor_value) as sum, avg(sensor_value) as average, max(sensor_value) as max, min(sensor_value) as min
+		group by sensor_id
+		insert into OutputStream;
+
+                 ]]>
+            </script>
+            <parameters>
+                <parameter name="timeInMins" type="int">
+                    <displayName>The time period to hold events in minutes</displayName>
+                    <description> The sliding time period for which the window should hold events</description>
+                    <defaultValue>1</defaultValue>
+                </parameter>
+            </parameters>
+        </template>
+    </templates>
+    <streams>
+    </streams>
+</templateDomain>

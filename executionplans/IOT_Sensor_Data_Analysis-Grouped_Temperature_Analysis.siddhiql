@@ -1,0 +1,24 @@
+
+
+            
+                /* Enter a unique ExecutionPlan */
+		@Plan:name('IOT_Sensor_Data_Analysis-Grouped_Temperature_Analysis')
+
+		/* Enter a unique description for ExecutionPlan */
+		-- @Plan:description('ExecutionPlan')
+
+		/* define streams/tables and write queries here ... */
+
+		@Import('org.wso2.event.raw.sensor.stream:1.0.0')
+		define stream InputStream (sensor_id string, sensor_value double);
+
+		@Export('org.wso2.event.grouped.sensor.stream:1.0.0')
+		define stream OutputStream (sensor_id string, count long, sum double, average double, max double, min double);
+
+		from InputStream#window.time(1 min)
+		select sensor_id, count() as count, sum(sensor_value) as sum, avg(sensor_value) as average, max(sensor_value) as max, min(sensor_value) as min
+		group by sensor_id
+		insert into OutputStream;
+
+                 
+            
